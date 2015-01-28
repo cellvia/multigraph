@@ -9,7 +9,7 @@
 				border: 1px solid black;
 			} 
 		</style>
-    <meta charset="UTF-8">
+		<meta charset="UTF-8">
 	</head>
   <body>
     <div id="body">
@@ -119,13 +119,14 @@ var $ = require("./lib/dom");
 
 var ENUM = require("./lib/shared/predicates.enum");
 
-var session = $("select[name='session']", true);
+var session = $.one("select[name='session']");
 var textInputs = $(".triple input");
 var selects = $('.triple select')
 var allInputs = textInputs.concat(selects);
 var buttons = $("button");
 var inputsAndButtons = allInputs.concat(buttons);
-var existing = $('#existing', true);
+var existing = $.one('#existing');
+window.existing = existing;
 
 db.get({}, function(err, res){
     res.forEach(function(triple){
@@ -134,7 +135,7 @@ db.get({}, function(err, res){
     });
 });
 
-$.attachAll(session, 'change', sessionHandler);
+$.attach(session, 'change', sessionHandler);
 function sessionHandler(e, session){
     session = session || this;
     if(session.value === "all"){
@@ -142,23 +143,22 @@ function sessionHandler(e, session){
             el.setAttribute('disabled', 'true');
         });
         //getAndRender();
-        friendOfFriendWhoLikesPeace();
+        friendOfFriendWhoLikesBilbo();
     }else{
         $.each(inputsAndButtons, function(el){
             el.removeAttribute('disabled');
         });        
-        existing[0].innerHTML = '';
-        //getAndRender(null, function(triple){ return triple.session === session.value });
+        existing.innerHTML = '';
+        getAndRender(null, function(triple){ return triple.session === session.value });
     }
 }
 
-
-$.attachAll(buttons, 'click', function(e){
+$.attach(buttons, 'click', function(e){
     for(var x = 0, len = textInputs.length; x<len; x++)
         if(!textInputs[x].value) return textInputs[x].value = this.innerText
 })
 
-$.attachAll(inputsAndButtons, "click", globalHandler)
+$.attach(inputsAndButtons, "click", globalHandler)
     ("keyup", globalHandler)
     ("blur", globalHandler)
 function globalHandler(){
@@ -188,10 +188,10 @@ function addTriple(triple){
 function renderTriple(triple){
     var el = document.createElement('div');
     el.textContent = translateTriple(triple);
-    if(existing[0].childNodes.length)
-        existing[0].insertBefore(el, existing[0].childNodes[0]);
+    if(existing.childNodes.length)
+        existing.insertBefore(el, existing.childNodes[0]);
     else
-        existing[0].appendChild(el);
+        existing.appendChild(el);
 }
 
 function getAndRender(query, filter){
@@ -203,7 +203,7 @@ function getAndRender(query, filter){
 }
 
 function renderAll(items){
-    existing[0].innerHTML = '';
+    existing.innerHTML = '';
     items.forEach(renderTriple);
 }
 
@@ -217,10 +217,6 @@ function friendOfFriendWhoLikesBilbo(){
         subject: db.v("x"),
         predicate: "likes",
         object: db.v("y")
-    },{
-        subject: db.v("y"),
-        predicate: "dislikes",
-        object: db.v("z")
     },
     {
         subject: db.v("z"),
@@ -253,32 +249,46 @@ function translateTriple(triple){
 }
 
 },{"./lib/dom":2,"./lib/shared/predicates.enum":3,"level-js":28,"levelgraph":47,"levelup":75}],2:[function(require,module,exports){
-var $;
-module.exports = $ = function (query, single){
-    if(single)
-        return [document.querySelector( query )];
+var $ = function (query, single){
+    if(single || (this !== window && this.single))
+        return document.querySelector( query );
     else
         return [].slice.call( document.querySelectorAll( query ) );
 };
-module.exports.attachAll = function(query, type, listener){
-    var list = typeof query === "string" ? $(query) : query;
+
+$.attach = function(query, type, listener){
+    var list;
+    if(typeof query === "string"){
+        list = $(query);
+    }else if(!(query instanceof Array)){
+        list = [query];
+    }else if(query instanceof Array){
+        list = query;
+    }else{
+        throw new Error("query must be selector or dom or array of dom")
+    }
     [].forEach.call(list, function(element){
         element.addEventListener(type, listener)
     });
-    return $.attachAll.bind($, list)
-}
-module.exports.each = function(query, fn){
+    return $.attach.bind($, list)
+};
+
+$.each = function(query, fn){
     var list = typeof query === "string" ? $(query) : query;
     [].forEach.call(list, fn);
     return $.each.bind($, list);
-}
+};
+
+$.one = $.bind({single: true});
+
+module.exports = $;
 },{}],3:[function(require,module,exports){
 module.exports = {
     "likes": "is friends with",
     "dislikes": "doesn't like",
     "near": "is near",
     "distant": "is far from",
-    "friendofafriendwholikes": "is friend of a friend with"
+    "friendofafriendwholikes": "is friend of frodo's who likes"
 }
 },{}],4:[function(require,module,exports){
 
