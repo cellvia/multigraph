@@ -8,13 +8,13 @@ var $ = require("./lib/dom");
 
 var ENUM = require("./lib/shared/predicates.enum");
 
-var session = $("select[name='session']", true);
+var session = $.one("select[name='session']");
 var textInputs = $(".triple input");
 var selects = $('.triple select')
 var allInputs = textInputs.concat(selects);
 var buttons = $("button");
 var inputsAndButtons = allInputs.concat(buttons);
-var existing = $('#existing', true);
+var existing = $.one('#existing');
 
 db.get({}, function(err, res){
     res.forEach(function(triple){
@@ -23,7 +23,7 @@ db.get({}, function(err, res){
     });
 });
 
-$.attachAll(session, 'change', sessionHandler);
+$.attach(session, 'change', sessionHandler);
 function sessionHandler(e, session){
     session = session || this;
     if(session.value === "all"){
@@ -31,23 +31,22 @@ function sessionHandler(e, session){
             el.setAttribute('disabled', 'true');
         });
         //getAndRender();
-        friendOfFriendWhoLikesPeace();
+        friendOfFriendWhoLikesBilbo();
     }else{
         $.each(inputsAndButtons, function(el){
             el.removeAttribute('disabled');
         });        
-        existing[0].innerHTML = '';
-        //getAndRender(null, function(triple){ return triple.session === session.value });
+        existing.innerHTML = '';
+        getAndRender(null, function(triple){ return triple.session === session.value });
     }
 }
 
-
-$.attachAll(buttons, 'click', function(e){
+$.attach(buttons, 'click', function(e){
     for(var x = 0, len = textInputs.length; x<len; x++)
         if(!textInputs[x].value) return textInputs[x].value = this.innerText
 })
 
-$.attachAll(inputsAndButtons, "click", globalHandler)
+$.attach(inputsAndButtons, "click", globalHandler)
     ("keyup", globalHandler)
     ("blur", globalHandler)
 function globalHandler(){
@@ -77,10 +76,10 @@ function addTriple(triple){
 function renderTriple(triple){
     var el = document.createElement('div');
     el.textContent = translateTriple(triple);
-    if(existing[0].childNodes.length)
-        existing[0].insertBefore(el, existing[0].childNodes[0]);
+    if(existing.childNodes.length)
+        existing.insertBefore(el, existing.childNodes[0]);
     else
-        existing[0].appendChild(el);
+        existing.appendChild(el);
 }
 
 function getAndRender(query, filter){
@@ -92,7 +91,7 @@ function getAndRender(query, filter){
 }
 
 function renderAll(items){
-    existing[0].innerHTML = '';
+    existing.innerHTML = '';
     items.forEach(renderTriple);
 }
 
@@ -106,10 +105,6 @@ function friendOfFriendWhoLikesBilbo(){
         subject: db.v("x"),
         predicate: "likes",
         object: db.v("y")
-    },{
-        subject: db.v("y"),
-        predicate: "dislikes",
-        object: db.v("z")
     },
     {
         subject: db.v("z"),
